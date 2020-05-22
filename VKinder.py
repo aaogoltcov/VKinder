@@ -174,6 +174,7 @@ class VKinder:
         self.last_request = 0.0
         self.photo_tags = {}
         self.session = requests.Session()
+        self.city_ids = {}
 
     def close(self):
         self.session.close()
@@ -238,11 +239,20 @@ class VKinder:
         self.last_request = time.time()
         return response
 
+    def get_city_id(self, list_of_params):
+        try:
+            list_of_params.update(city=self.vk.database.getCities(country_id=1,
+                                                                  need_all=1,
+                                                                  q=list_of_params['hometown'])['items'][0]['id'])
+        except KeyError:
+            pass
+
     def user_search(self, blocked_list):  # Поиск кандидатов с учетом критериев поиска
         self.fields = 'common_count, activities, bdate, music, movies, tv, books, games, domain, interests, ' \
                       'has_photo, occupation '
-        self.params.update(dict(fields=self.fields))
-        for item in self.vk_tools.get_all('users.search', 1000, self.params)['items']:
+        self.params['params'].update(dict(fields=self.fields))
+        self.get_city_id(self.params['params'])
+        for item in self.vk_tools.get_all('users.search', 1000, self.params['params'])['items']:
             if item['id'] in blocked_list:  # Исключение блокированных пользователей
                 pass
             else:
@@ -421,8 +431,9 @@ def main():
                         if (key and value) and (key != 'q' or value != 'q'):
                             kwargs.update({key: value})
                     sub_command = str()
-                    # kwargs = {'sex': '1', 'hometown': 'Череповец', 'age_from': '25', 'age_to': '35'}  # delete
-                    users = VKinder(login, password, kwargs)
+                    # kwargs = {'sex': 1, 'hometown': 'Череповец', 'age_from': 25, 'age_to': 35}  # delete
+                    # print(kwargs) # delete
+                    users = VKinder(login, password, params=kwargs)
                     print('Запуск VKinder:')
                     start_time = time.time()
                     users.vk_session_init()
