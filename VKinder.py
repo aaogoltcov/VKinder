@@ -5,13 +5,12 @@ import ssl
 import time
 from pprint import pprint
 
-import nltk
 import psycopg2
 import pymorphy2
 import requests
 import vk_api
-from nltk.corpus import stopwords
 import nltk
+from nltk.corpus import stopwords
 import psycopg2._psycopg
 from tqdm import tqdm
 
