@@ -5,11 +5,13 @@ import ssl
 import time
 from pprint import pprint
 
+import nltk
 import psycopg2
 import pymorphy2
 import requests
 import vk_api
 from nltk.corpus import stopwords
+import nltk
 import psycopg2._psycopg
 from tqdm import tqdm
 
@@ -60,7 +62,7 @@ class DBVKinder:  # Класс для работы с БД PostgreSQL
         return cursor.fetchall()
 
     @staticmethod
-    def get_blocked_list(cursor): # Получение списка только блокированных пользователей
+    def get_blocked_list(cursor):  # Получение списка только блокированных пользователей
         blocked_list = []
         cursor.execute("SELECT USER_ID FROM USER_LIST WHERE IS_BLOCKED = True;")
         for item in cursor.fetchall():
@@ -103,6 +105,13 @@ class VKinder:
             pass
         else:
             ssl._create_default_https_context = _create_unverified_https_context
+
+        try:
+            if len(stopwords.words()) == 0:
+                nltk.download('stopwords')
+        except LookupError:
+            nltk.download('stopwords')
+
         morph = pymorphy2.MorphAnalyzer()  # Необходимо для приведения слов в родительный падеж
         for item in list:
             for key, value in item.items():
@@ -189,7 +198,6 @@ class VKinder:
         self.vk_request_one_param_pool = vk_api.requests_pool
         self.birth_year_person = datetime.datetime.strptime(self.vk.account.getProfileInfo()['bdate'],
                                                             '%d.%m.%Y').date().year
-        self.person_groups = self.vk.groups.get(user_id=self.user_id)
         print('\t - инициализация vk api сессии')
 
     def get_access_token(self):  # Получение токена
@@ -209,6 +217,7 @@ class VKinder:
             [list(data[self.login]['token'].keys())[0]]
             [list(data[self.login]['token'][list(data[self.login]['token'].keys())[0]].keys())[0]]
             ['user_id'])
+        self.person_groups = self.vk.groups.get(user_id=self.user_id)
         print(f'\t - получен id ({self.user_id}) пользователя')
         return self.user_id
 
@@ -422,7 +431,7 @@ def main():
             while command != "q":
                 command = input('Введите команду (help): ')
                 if command == 'search':
-                    print('Введите остальные параметры поиска:')
+                    print('Введите остальные параметры поиска (q-выйти):')
                     while sub_command != "q":
                         sub_command = input('\t- введите ключ: ')
                         key = sub_command
@@ -432,7 +441,7 @@ def main():
                             kwargs.update({key: value})
                     sub_command = str()
                     # kwargs = {'sex': 1, 'hometown': 'Череповец', 'age_from': 25, 'age_to': 35}  # delete
-                    # print(kwargs) # delete
+                    # print(kwargs)  # delete
                     users = VKinder(login, password, params=kwargs)
                     print('Запуск VKinder:')
                     start_time = time.time()
